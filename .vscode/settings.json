@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "efi.h": "c",
-        "efilib.h": "c"
+        "efilib.h": "c",
+        "gop.h": "c"
     }
 }
