@@ -2,6 +2,10 @@
     "files.associations": {
         "efi.h": "c",
         "efilib.h": "c",
-        "gop.h": "c"
+        "gop.h": "c",
+        "fs.h": "c",
+        "stdint.h": "c",
+        "stdint-gcc.h": "c",
+        "kernel.h": "c"
     }
 }

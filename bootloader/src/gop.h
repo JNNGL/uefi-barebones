@@ -1,3 +1,6 @@
+#ifndef BOOTLOADER_GOP_H
+#define BOOTLOADER_GOP_H
+
 #include <efi.h>
 #include <efilib.h>
 
@@ -12,3 +15,5 @@ typedef struct framebuffer_s {
 
 EFI_GRAPHICS_OUTPUT_PROTOCOL* locate_gop();
 framebuffer_t* get_framebuffer(EFI_GRAPHICS_OUTPUT_PROTOCOL* gop);
+
+#endif
