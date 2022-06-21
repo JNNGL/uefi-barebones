@@ -4,3 +4,6 @@
 *.a
 *.tar.*
 *.tar
+*.iso
+*.img
+*.so
