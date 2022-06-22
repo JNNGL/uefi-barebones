@@ -2,9 +2,8 @@
 #include <stdbool.h>
 #include "tty.h"
 
-const char* int_to_str_ex(int num, char* str, int radix) {
+const char* int_to_str_ex(int n, char* str, int radix) {
     if(!str) return 0;
-    int n = num;
     int i = 0;
     bool isneg = false;
     if(n == 0) {
