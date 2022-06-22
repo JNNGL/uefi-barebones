@@ -7,6 +7,9 @@
 #include "font.h"
 
 typedef struct boot_info_s {
+    EFI_MEMORY_DESCRIPTOR* memory_map;
+    UINTN memory_map_size;
+    UINTN memory_map_desc_size;
     framebuffer_t* framebuffer;
     struct psf1_font* font;
 } boot_info_t;
@@ -46,9 +49,23 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable) {
         return -1;
     }
 
+    EFI_MEMORY_DESCRIPTOR* map;
+    UINTN map_size;
+    UINTN map_key;
+    UINTN descriptor_size;
+    UINT32 descriptor_version;
+    ST->BootServices->GetMemoryMap(&map_size, map, &map_key, &descriptor_size, &descriptor_version);
+    ST->BootServices->AllocatePool(EfiLoaderData, map_size, (void**)&map);
+    ST->BootServices->GetMemoryMap(&map_size, map, &map_key, &descriptor_size, &descriptor_version);
+
     boot_info_t boot_info;
+    boot_info.memory_map = map;
+    boot_info.memory_map_size = map_size;
+    boot_info.memory_map_desc_size = descriptor_size;
     boot_info.framebuffer = screen;
     boot_info.font = font;
+
+    ST->BootServices->ExitBootServices(ImageHandle, map_key);
     
     kernel_main(&boot_info);
 

@@ -9,6 +9,7 @@
         "kernel.h": "c",
         "tty.h": "c",
         "graphics.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "bitmap.h": "c"
     }
 }

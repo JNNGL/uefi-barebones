@@ -1,6 +1,8 @@
 CC = x86_64-linux-gnu-gcc
+ASM = nasm
 LD = x86_64-linux-gnu-ld
 CFLAGS = -ffreestanding -fshort-wchar
+ASMFLAGS = 
 LINKERSCRIPT = kernel.ld
 LDFLAGS = -T $(LINKERSCRIPT) -Bsymbolic -nostdlib -static
 
@@ -11,7 +13,15 @@ BIN_DIR = bin
 rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
 SRC = $(call rwildcard,$(SRC_DIR),*.c)
-OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
+ASM_SRC = $(call rwildcard,$(SRC_DIR),*.s)
+
+OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC)) 
+OBJS += $(patsubst $(SRC_DIR)/%.s, $(OBJ_DIR)/%_.o, $(ASM_SRC))
+
+$(OBJ_DIR)/%_.o: $(SRC_DIR)/%.s
+	@echo ASM $^
+	@mkdir -p $(@D)
+	@$(ASM) $(ASMFLAGS) $^ -f elf64 -o $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@echo CC $^
