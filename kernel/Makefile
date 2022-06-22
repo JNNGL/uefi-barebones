@@ -18,6 +18,13 @@ ASM_SRC = $(call rwildcard,$(SRC_DIR),*.s)
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC)) 
 OBJS += $(patsubst $(SRC_DIR)/%.s, $(OBJ_DIR)/%_.o, $(ASM_SRC))
 
+INTERRUPTS = internal/interrupts
+
+$(OBJ_DIR)/$(INTERRUPTS).o: $(SRC_DIR)/$(INTERRUPTS).c
+	@echo CC $^
+	@mkdir -p $(@D)
+	@$(CC) -mno-red-zone -mgeneral-regs-only -ffreestanding -c $^ -o $@
+
 $(OBJ_DIR)/%_.o: $(SRC_DIR)/%.s
 	@echo ASM $^
 	@mkdir -p $(@D)

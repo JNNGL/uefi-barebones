@@ -10,6 +10,9 @@
 #include "internal/paging.h"
 #include "internal/pmi.h"
 #include "internal/ptm.h"
+#include "internal/idt.h"
+#include "internal/interrupts.h"
+#include "internal/io.h"
 
 extern uint64_t _kernel_start;
 extern uint64_t _kernel_end;
@@ -27,15 +30,17 @@ typedef struct kernel_info_s {
 } kernel_info_t;
 
 
-
+idtr_t global_idtr;
 ptm_t global_ptm;
 kernel_info_t kernel_init(boot_info_t* info) {
     kernel_info_t output;
 
-    gdt_descriptor_t descriptor;
-    descriptor.size = sizeof(struct gdt_s) - 1;
-    descriptor.offset = (uint64_t)&default_gdt;
-    gdt_load(&descriptor);
+    {
+        gdt_descriptor_t descriptor;
+        descriptor.size = sizeof(struct gdt_s) - 1;
+        descriptor.offset = (uint64_t)&default_gdt;
+        gdt_load(&descriptor);
+    }
 
     {
         uint64_t memmap_entries = info->memory_map_size / info->memory_map_desc_size;
@@ -69,6 +74,41 @@ kernel_info_t kernel_init(boot_info_t* info) {
         output.ptm = &global_ptm;
     }
 
+    {
+        global_idtr.limit = 0x0FFF;
+        global_idtr.offset = (uint64_t)pfa_request_page(&global_allocator);
+
+        idt_desc_entry_t* int_page_fault = (idt_desc_entry_t*)(global_idtr.offset + 0xE * sizeof(struct idt_desc_entry_s));
+        idt_desc_entry_set_offset(int_page_fault, (uint64_t)page_fault_handler);
+        int_page_fault->type_attr = IDT_TA_INTERRUPT_GATE;
+        int_page_fault->selector = 0x08;
+
+        idt_desc_entry_t* int_double_fault = (idt_desc_entry_t*)(global_idtr.offset + 0x8 * sizeof(struct idt_desc_entry_s));
+        idt_desc_entry_set_offset(int_double_fault, (uint64_t)double_fault_handler);
+        int_double_fault->type_attr = IDT_TA_INTERRUPT_GATE;
+        int_double_fault->selector = 0x08;
+
+        idt_desc_entry_t* int_gp_fault = (idt_desc_entry_t*)(global_idtr.offset + 0xD * sizeof(struct idt_desc_entry_s));
+        idt_desc_entry_set_offset(int_gp_fault, (uint64_t)gp_fault_handler);
+        int_gp_fault->type_attr = IDT_TA_INTERRUPT_GATE;
+        int_gp_fault->selector = 0x08;
+
+        idt_desc_entry_t* int_kb = (idt_desc_entry_t*)(global_idtr.offset + 0x21 * sizeof(struct idt_desc_entry_s));
+        idt_desc_entry_set_offset(int_kb, (uint64_t)kb_interrupt_handler);
+        int_kb->type_attr = IDT_TA_INTERRUPT_GATE;
+        int_kb->selector = 0x08;
+
+        asm("lidt %0" : : "m" (global_idtr));
+
+        remap_pic();
+
+        outb(PIC1_DATA, 0b11111101);
+        outb(PIC2_DATA, 0b11111111);
+
+        asm ("sti");
+
+    }
+
     return output;
 }
 
@@ -97,24 +137,21 @@ void fill_block(int x, int y, int cid) {
     case 0:
     default: { color = VGA_BLACK; break; }
     }
-    for(int dx = x; dx < x+50; dx++) {
-        for(int dy = y; dy < y+25; dy++) {
-            fb_set_pixel(dx, dy, color.argb);
-        }
-    }
+    fb_fill_rect(x, y, 50, 25, color.argb);
 }
 
 uint8_t buffer[20];
 void kernel_main(boot_info_t* info) {
     fb_set_framebuffer(info->framebuffer);
     tty_set_font(info->font);
+    //tty_set_position(0, 5);
 
     kernel_info_t kernel = kernel_init(info);
 
     for(int x = 0; x < 8; x++) {
         for(int y = 0; y < 2; y++) {
             int cid = y * 8 + x;
-            fill_block(x*50+300, y*25, cid);
+            fill_block(x*50, y*25, cid);
         }
     }
 
