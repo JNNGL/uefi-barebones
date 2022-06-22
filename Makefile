@@ -14,13 +14,22 @@ clean:
 
 img:
 	@mkdir -p $(BIN_DIR)
-	dd if=/dev/zero of=$(BIN_DIR)/$(NAME).img bs=512 count=93750
+	dd if=/dev/zero of=$(BIN_DIR)/$(NAME).img bs=1k count=1440
 	mformat -i $(BIN_DIR)/$(NAME).img -f 1440 ::
 	mmd -i $(BIN_DIR)/$(NAME).img ::/EFI
 	mmd -i $(BIN_DIR)/$(NAME).img ::/EFI/BOOT
 	mcopy -i $(BIN_DIR)/$(NAME).img $(BOOTLOADER_DIR)/$(BIN_DIR)/BOOTX64.EFI ::/EFI/BOOT
 	mcopy -i $(BIN_DIR)/$(NAME).img startup.nsh ::
 	mcopy -i $(BIN_DIR)/$(NAME).img $(KERNEL_DIR)/$(BIN_DIR)/kernel.elf ::
+	mcopy -i $(BIN_DIR)/$(NAME).img zap-ext-vga16.psf ::
 
 iso: img
-	xorriso -as mkisofs -R -f -e $(NAME).img -no-emul-boot -o $(BIN_DIR)/$(NAME).iso $(BIN_DIR)
+	@rm -f $(BIN_DIR)/$(NAME).iso
+	@mkdir -pv iso/EFI/BOOT
+	@cp -v $(BOOTLOADER_DIR)/$(BIN_DIR)/BOOTX64.EFI iso/EFI/BOOT
+	@cp -v startup.nsh iso
+	@cp -v $(KERNEL_DIR)/$(BIN_DIR)/kernel.elf iso
+	@cp -v $(BIN_DIR)/$(NAME).img iso/fat.img
+	@cp -v zap-ext-vga16.psf iso
+	xorriso -as mkisofs -R -f -eltorito-alt-boot -e EFI/BOOT/BOOTX64.EFI -no-emul-boot -o $(BIN_DIR)/$(NAME).iso iso
+	@rm -rf iso

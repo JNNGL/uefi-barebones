@@ -6,6 +6,9 @@
         "fs.h": "c",
         "stdint.h": "c",
         "stdint-gcc.h": "c",
-        "kernel.h": "c"
+        "kernel.h": "c",
+        "tty.h": "c",
+        "graphics.h": "c",
+        "stdbool.h": "c"
     }
 }
